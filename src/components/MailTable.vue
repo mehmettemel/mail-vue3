@@ -7,13 +7,13 @@
         :class="['clickable', email.read ? 'read' : '']"
         @click="openEmail(email)"
       >
-        <td><input type="checkbox" /></td>
+        <td>
+          <input type="checkbox" />
+        </td>
         <td>{{ email.from }}</td>
         <td>
           <p>
-            <strong>{{ email.subject }}</strong>
-            -
-            {{ email.body }}
+            <strong>{{ email.subject }}</strong> - {{ email.body }}
           </p>
         </td>
         <td class="date">{{ format(new Date(email.sentAt), "MMM do yyyy") }}</td>
@@ -21,30 +21,29 @@
       </tr>
     </tbody>
   </table>
-  <MailView v-if="openedEmail" :email="openedEmail" />
-  <div v-if="openedEmail">
-    {{ openedEmail.subject }}
-  </div>
+  <ModalView v-if="openedEmail" @closeModal="openedEmail = null">
+    <MailView :email="openedEmail" />
+  </ModalView>
 </template>
 
 <script>
-import MailView from "./MailView";
 import { format } from "date-fns";
 import axios from "axios";
+import MailView from "@/components/MailView.vue";
+import ModalView from "@/components/ModalView.vue";
 import { ref } from "vue";
 export default {
   async setup() {
-    let response = await axios.get("http://localhost:3000/emails");
-    let emails = response.data;
-    // await new Promise(resolve => setTimeout(resolve, 900));
+    let { data: emails } = await axios.get("http://localhost:3000/emails");
     return {
       format,
       emails: ref(emails),
-      openedEmail: null
+      openedEmail: ref(null)
     };
   },
   components: {
-    MailView
+    MailView,
+    ModalView
   },
   computed: {
     sortedEmails() {
@@ -52,7 +51,6 @@ export default {
         return e1.sentAt < e2.sentAt ? 1 : -1;
       });
     },
-
     unarchivedEmails() {
       return this.sortedEmails.filter(e => !e.archived);
     }
@@ -60,18 +58,18 @@ export default {
   methods: {
     openEmail(email) {
       email.read = true;
-      this.uptadeEmail(email);
+      this.updateEmail(email);
       this.openedEmail = email;
     },
     archiveEmail(email) {
       email.archived = true;
-      this.uptadeEmail(email);
+      this.updateEmail(email);
     },
-    uptadeEmail(email) {
+    updateEmail(email) {
       axios.put(`http://localhost:3000/emails/${email.id}`, email);
     }
   }
 };
 </script>
 
-<style></style>
+<style scoped></style>
